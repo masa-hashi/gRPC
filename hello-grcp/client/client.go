@@ -8,7 +8,6 @@ import (
 
 	pb "github.com/masa-hashi/hello-grpc"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/status"
 )
@@ -24,11 +23,15 @@ func main () {
 
 	name := os.Args[1]
 
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	md := metadata.Pairs("timestamp", time.Now().Format(time.Stamp))
-	ctx = metadata.NewOutgoingContext(ctx, md)
-	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: name}, grpc.Trailer(&md))
+	go func() {
+		time.Sleep(1* time.Second)
+		cancel()
+	}()
+
+	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
 
 	if err != nil {
 		s, ok := status.FromError(err)
